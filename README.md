@@ -1,2 +1,2 @@
-# lab3
-COMPX234-A3
+# COMPX234-A3
+lab3
