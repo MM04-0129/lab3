@@ -19,4 +19,37 @@ class TupleSpace:
             'total_errors': 0
         }
         self.lock = threading.Lock()
-
+def read(self, key):
+        with self.lock:
+            if key in self.tuples:
+                self.stats['total_READs'] += 1
+                self.stats['total_operations'] += 1
+                return f"OK ({key}, {self.tuples[key]}) read"
+            else:
+                self.stats['total_errors'] += 1
+                self.stats['total_operations'] += 1
+                return f"ERR {key} does not exist"
+def get(self, key):
+        with self.lock:
+            if key in self.tuples:
+                value = self.tuples.pop(key)
+                self.stats['tuple_count'] -= 1
+                self.stats['total_GETs'] += 1
+                self.stats['total_operations'] += 1
+                return f"OK ({key}, {value}) removed"
+            else:
+                self.stats['total_errors'] += 1
+                self.stats['total_operations'] += 1
+                return f"ERR {key} does not exist"
+def put(self, key, value):
+        with self.lock:
+            if key in self.tuples:
+                self.stats['total_errors'] += 1
+                self.stats['total_operations'] += 1
+                return f"ERR {key} already exists"
+            else:
+                self.tuples[key] = value
+                self.stats['tuple_count'] += 1
+                self.stats['total_PUTs'] += 1
+                self.stats['total_operations'] += 1
+                return f"OK ({key}, {value}) added"

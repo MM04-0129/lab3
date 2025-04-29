@@ -2,40 +2,41 @@ import socket
 import sys
 
 
-def send_request(client_socket, request):
-    # Calculate the total length of the request message
-    length = len(request) + 3
-    full_request = f"{length:03d} {request}"
-    # Send the request to the server
-    client_socket.send(full_request.encode('utf-8'))
-    # Receive the response from the server
-    response = client_socket.recv(1024).decode('utf-8')
-    print(f"Request: {request}, Response: {response}")
-
-
-def main():
-    if len(sys.argv) != 4:
-        print("Usage: python tuple_space_client.py <host> <port> <request_file>")
-        sys.exit(1)
-    host = sys.argv[1]
-    port = int(sys.argv[2])
-    request_file = sys.argv[3]
-    # Create a TCP socket
+def send_requests(server_host, server_port, request_file):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect((server_host, server_port))
+
     try:
-        # Connect to the server
-        client_socket.connect((host, port))
         with open(request_file, 'r') as file:
             for line in file:
-                request = line.strip()
-                # Send each request to the server
-                send_request(client_socket, request)
+                line = line.strip()
+                if not line:
+                    continue
+                parts = line.split(' ', 1)
+                operation = parts[0]
+                key = parts[1].split(' ', 1)[0]
+                value = parts[1].split(' ', 1)[1] if len(parts) > 1 and operation == 'PUT' else ''
+                message = f"{len(line):03d} {operation} {key}"
+                if operation == 'PUT':
+                    message += f" {value}"
+                client_socket.send(message.encode())
+                response = client_socket.recv(1024).decode()
+                response_size = int(response[:3])
+                response_content = response[3:].strip()
+                print(f"{line}: {response_content}")
+    except FileNotFoundError:
+        print(f"Error: Request file '{request_file}' not found.")
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        # Close the socket
         client_socket.close()
 
 
 if __name__ == "__main__":
-    main()
+    if len(sys.argv) != 4:
+        print("Usage: python client.py <server_host> <server_port> <request_file>")
+        sys.exit(1)
+    server_host = sys.argv[1]
+    server_port = int(sys.argv[2])
+    request_file = sys.argv[3]
+    send_requests(server_host, server_port, request_file)
